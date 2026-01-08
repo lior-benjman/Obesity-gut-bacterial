@@ -7,30 +7,21 @@ we wanted to explore gut bacteria and it's connection to the obesity / type 2 di
 Our Final Research Question: Which gut bacterial taxa are associated with obesity (BMI ≥ 30 vs BMI ≤ 25), and how well can gut microbiome composition predict obesity status?
 
 Data source - https://waldronlab.io/curatedMetagenomicData/
-In order to download the dataset, we will use R notebook since it's the most recommended clean way to download this dataset with no caveats.
-![alt text](image.png)
+The dataset was obtained from the *LeChatelierE_2013* study.
+Initial data acquisition was performed using an R script (see `Data/curated_data.ipynb`) to export raw metadata and relative abundance.
 
-In R:
-> bmi_col <- grep("bmi", colnames(meta), ignore.case = TRUE, value = TRUE)[1]
-> meta$BMI_num <- as.numeric(meta[[bmi_col]])
-> 
-> meta$group <- NA
-> meta$group[meta$BMI_num <= 25] <- "Lean"
-> meta$group[meta$BMI_num >= 30] <- "Obese"
-> 
-> summary(meta2$BMI_num)
-   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-  18.10   23.50   31.20   29.79   34.00   46.60 
-> table(meta2$group)
+Files:
+- `Data/Raw_LeChatelier_metadata.csv`: Patient metadata including BMI.
+- `Data/Raw_LeChatelier_relative_abundance.csv`: Taxa relative abundance (Samples × Taxa).
 
- Lean Obese 
-   96   169 
+### Analysis Workflow
+1. **Data Preprocessing**: Using the **MIPMLP Pipeline** (Microbiome Preprocessing and Machine Learning Pipeline) for taxonomy aggregation, filtering (1% threshold), and relative normalization.
+2. **Exploratory Analysis**: Visualizing data challenges like sparsity, class imbalance, and skewness.
+3. **Statistical Association**: Performing Mann-Whitney U tests with Benjamini-Hochberg FDR correction to identify taxa significantly associated with obesity.
+4. **Predictive Modeling**: Training an L1-regularized Logistic Regression model to predict obesity status from microbiome composition, evaluated via cross-validation (ROC-AUC).
 
-   We filtered the original dataset to include only lean and obese individuals, removed rare taxa, and applied a log transformation.
-   The final analysis was conducted on the processed feature matrix and corresponding metadata.
-   
-   Explanation:
-   We applied a log transformation early because microbiome relative abundance data is highly skewed, sparse, and spans several orders of magnitude, and many of the statistical tests and machine learning models we use later assume more stable variance and benefit from reduced skewness. 
-   
+### Key Results
+The analysis identifies specific gut bacterial taxa that are significantly enriched or depleted in obese individuals and evaluates the overall predictive power of the gut microbiome for obesity.
 
-   Successfully downloaded the datasets ("LeChatelier_obesity_meta" and "LeChatelier_obesity_X_log").
+---
+Successfully processed the datasets and conducted the full analysis in `Obesity_bacteria.ipynb`.
