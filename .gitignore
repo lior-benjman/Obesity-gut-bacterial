@@ -2,3 +2,4 @@
 *.pptx
 *.py
 checkpoints/
+*.md
