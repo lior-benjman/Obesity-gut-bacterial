@@ -3,3 +3,4 @@
 *.py
 checkpoints/
 *.md
+logs/
