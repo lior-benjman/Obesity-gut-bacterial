@@ -13,7 +13,7 @@ This repository contains the complete research pipeline for analyzing the relati
 
 **Key Findings:**
 1.  **Protective Signatures:** High abundance of specific commensal bacteria (e.g., *Fretibacterium fastidiosum*) is strongly associated with the Lean phenotype.
-2.  **Model Performance:** The **iMic CNN model** achieved an **AUC of 0.80**, outperforming Logistic Regression (0.70) and Random Forest (0.74).
+2.  **Model Performance:** The **iMic CNN model** achieved a **ROC-AUC of ~0.80** on the held-out test set, outperforming the tabular baselines (Logistic Regression / Random Forest). See `research.ipynb` for full ROC/PR curves and confusion-matrix metrics.
 3.  **Clinical Optimization:** By calibrating the decision threshold from 0.5 to 0.3, we increased **Sensitivity (Recall) by 73%** (from 0.30 to 0.52) while maintaining high **Precision (0.94)**, making the model a viable screening tool.
 
 ---
@@ -48,7 +48,7 @@ Ensure you have **Python 3.8+** installed. The project relies on the following k
 
 **Installation:**
 ```bash
-pip install torch pytorch-lightning optuna scikit-learn pandas seaborn matplotlib imbalanced-learn mipmlp
+pip install torch pytorch-lightning optuna scikit-learn pandas seaborn matplotlib imbalanced-learn mipmlp scipy xgboost
 ```
 
 ### 2. Data Acquisition (Optional)
@@ -87,12 +87,14 @@ Open **`research.ipynb`** in Jupyter Lab or VS Code. This single notebook execut
 
 | Model | AUC | Precision | Recall | F1-Score |
 | :--- | :--- | :--- | :--- | :--- |
-| **Logistic Regression (Baseline)** | 0.70 | - | - | - |
-| **Random Forest (Optimized)** | 0.74 | - | - | - |
+| **Logistic Regression (Baseline)** | 0.70 | 0.75 | 0.73 | 0.74 |
+| **Random Forest (Optimized)** | 0.62 | 0.67 | 0.55 | 0.60 |
 | **iMic CNN (Threshold 0.5)** | 0.80 | 1.00 | 0.30 | 0.47 |
 | **iMic CNN (Threshold 0.3)** | **0.80** | **0.94** | **0.52** | **0.67** |
 
 *The iMic model with threshold calibration provides the best balance for clinical screening.*
+
+*Notes: Tabular baseline metrics are computed on the same held-out test split used for iMic (stratified 80/20 split, `random_state=43`, threshold=0.5). The notebook also reports PR-AUC and plots ROC/PR curves for all models.*
 
 ---
 
