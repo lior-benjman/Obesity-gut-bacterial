@@ -26,9 +26,13 @@ Data/
   Raw_LeChatelier_metadata.csv            # Processed metadata
   Raw_LeChatelier_relative_abundance.csv  # Processed taxa abundance
 research_images/                          # Generated phylogenetic images (iMic)
+research_images_top5_rf_train/            # Leakage-safe top-5 RF image set for iMic
 logs/                                     # PyTorch Lightning logs
 checkpoints/                              # Model checkpoints
 research.ipynb                            # Main analysis notebook (run this)
+requirements.txt                          # Pinned Python dependencies
+SUBMISSION_CHECKLIST.md                   # Stage-2 submission checklist
+paper_template.md                         # English paper writing template
 README.md                                 # Project documentation
 ```
 
@@ -37,25 +41,29 @@ README.md                                 # Project documentation
 ## Reproduction Instructions
 
 ### 1. Prerequisites & Environment
-Ensure you have **Python 3.8+** installed. Key libraries:
-- `torch`, `pytorch-lightning` (deep learning)
-- `MIPMLP` (microbiome preprocessing & image generation)
-- `optuna` (hyperparameter optimization)
-- `scikit-learn`, `imbalanced-learn` (ML & sampling)
-- `pandas`, `seaborn`, `matplotlib` (data manipulation & plotting)
+Use **Python 3.12.x** (tested with 3.12.5).
 
-Install:
+Create a clean environment and install pinned dependencies:
 ```bash
-pip install torch pytorch-lightning optuna scikit-learn pandas seaborn matplotlib imbalanced-learn mipmlp scipy xgboost
+python -m venv .venv
+.venv\Scripts\activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
 ### 2. Data Acquisition (Optional)
 The required CSV files are already included under `Data/`.
 - Source: curatedMetagenomicData (LeChatelierE_2013 study).
-- To re-download from scratch, run `Data/curated_data.ipynb` in an R environment.
+- To re-download from scratch, run `Data/curated_data.ipynb` in an R environment (`IRkernel`).
 
 ### 3. Running the Analysis
-Open `research.ipynb` and run top to bottom.
+Open `research.ipynb` and run cells top-to-bottom in order.
+
+The notebook is configured for:
+- fixed random seeds,
+- fixed train/test split,
+- train-only feature selection for hold-out evaluation,
+- Optuna best-parameter reuse in final iMic training.
 
 #### Part A: Preprocessing & EDA
 - MIPMLP pipeline (species-level aggregation + rare taxa filtering)
@@ -78,7 +86,12 @@ Open `research.ipynb` and run top to bottom.
 - Threshold calibration (0.3 vs 0.5)
 
 ### 4. Reproducibility
-Random seeds are set in `research.ipynb` (NumPy, Python, PyTorch), and splits use fixed `random_state` values.
+Random seeds are set in `research.ipynb` (`NumPy`, `Python`, `PyTorch`, `PyTorch Lightning`) and splits use fixed `random_state` values.
+
+For submission packaging:
+- use `SUBMISSION_CHECKLIST.md` before final export,
+- draft the Stage-2 paper with `paper_template.md`,
+- export the final paper as an English PDF (max 8 pages, as required by course instructions).
 
 ---
 
