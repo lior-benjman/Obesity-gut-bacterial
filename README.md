@@ -3,101 +3,111 @@
 **Course:** Machine Learning and Statistics in Medical Applications  
 **Final Project: Phase 2**
 
-This repository contains the complete research pipeline for analyzing the relationship between gut bacterial taxa and obesity. It employs advanced statistical methods, tabular machine learning, and a novel deep learning approach (**iMic**) that converts microbiome data into phylogenetic images.
+This repository contains the complete research pipeline for analyzing the relationship between gut bacterial taxa and obesity. It combines statistical testing, tabular machine learning, and a deep learning approach (**iMic**) that converts microbiome data into phylogenetic images.
 
 ---
 
-## 📌 Project Overview
+## Project Overview
 
-**Research Question:** Which gut bacterial taxa are associated with obesity (BMI ≥ 30) vs. Lean status (BMI ≤ 25), and can deep learning on phylogenetic images outperform traditional tabular models in predicting obesity?
+**Research Question:** Which gut bacterial taxa are associated with obesity (BMI >= 30) vs. Lean status (BMI <= 25), and can deep learning on phylogenetic images outperform traditional tabular models in predicting obesity?
 
-**Key Findings:**
-1.  **Protective Signatures:** High abundance of specific commensal bacteria (e.g., *Fretibacterium fastidiosum*) is strongly associated with the Lean phenotype.
-2.  **Model Performance:** The **iMic CNN model** achieved a **ROC-AUC of ~0.80** on the held-out test set, outperforming the tabular baselines (Logistic Regression / Random Forest). See `research.ipynb` for full ROC/PR curves and confusion-matrix metrics.
-3.  **Clinical Optimization:** By calibrating the decision threshold from 0.5 to 0.3, we increased **Sensitivity (Recall) by 73%** (from 0.30 to 0.52) while maintaining high **Precision (0.94)**, making the model a viable screening tool.
+**Key Findings (from current notebook outputs):**
+1. **Protective signatures:** High abundance of specific commensal bacteria (e.g., *Fretibacterium fastidiosum*) is associated with the Lean phenotype.
+2. **Model performance:** In 5-fold CV, Logistic Regression reaches AUC ~0.70 and Random Forest ~0.74. On the shared hold-out split, Logistic Regression and Random Forest reach AUC ~0.70, while iMic achieves AUC ~0.80.
+3. **Clinical calibration:** Shifting the decision threshold from 0.5 to 0.3 improves sensitivity for Obese cases while maintaining high precision (see `research.ipynb`).
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```
-├── Data/
-│   ├── curated_data.ipynb            # R script for downloading raw data (curatedMetagenomicData)
-│   ├── Raw_LeChatelier_metadata.csv  # Processed Metadata
-│   └── Raw_LeChatelier_relative_abundance.csv # Processed Taxa Abundance
-├── research_images/                  # Generated Phylogenetic Images (for iMic model)
-├── logs/                             # TensorBoard training logs
-├── checkpoints/                      # PyTorch Lightning model checkpoints
-├── research.ipynb                    # MAIN ANALYSIS NOTEBOOK (Run this)
-└── README.md                         # Project Documentation
+Data/
+  curated_data.ipynb                      # R notebook to re-download the raw data
+  Raw_LeChatelier_metadata.csv            # Processed metadata
+  Raw_LeChatelier_relative_abundance.csv  # Processed taxa abundance
+research_images/                          # Generated phylogenetic images (iMic)
+logs/                                     # PyTorch Lightning logs
+checkpoints/                              # Model checkpoints
+research.ipynb                            # Main analysis notebook (run this)
+README.md                                 # Project documentation
 ```
 
 ---
 
-## 🛠️ Reproduction Instructions
-
-To fully reproduce the analysis presented in the final report, follow these steps.
+## Reproduction Instructions
 
 ### 1. Prerequisites & Environment
-Ensure you have **Python 3.8+** installed. The project relies on the following key libraries:
-*   `torch`, `pytorch-lightning` (Deep Learning)
-*   `MIPMLP` (Microbiome Preprocessing & Image Generation)
-*   `optuna` (Hyperparameter Optimization)
-*   `scikit-learn`, `imbalanced-learn` (ML & Sampling)
-*   `pandas`, `seaborn`, `matplotlib` (Data Manipulation & Plotting)
+Ensure you have **Python 3.8+** installed. Key libraries:
+- `torch`, `pytorch-lightning` (deep learning)
+- `MIPMLP` (microbiome preprocessing & image generation)
+- `optuna` (hyperparameter optimization)
+- `scikit-learn`, `imbalanced-learn` (ML & sampling)
+- `pandas`, `seaborn`, `matplotlib` (data manipulation & plotting)
 
-**Installation:**
+Install:
 ```bash
 pip install torch pytorch-lightning optuna scikit-learn pandas seaborn matplotlib imbalanced-learn mipmlp scipy xgboost
 ```
 
 ### 2. Data Acquisition (Optional)
-The necessary CSV files (`Raw_LeChatelier_*.csv`) are **already included** in the `Data/` folder.
-*   *Source:* [curatedMetagenomicData](https://waldronlab.io/curatedMetagenomicData/) (LeChatelierE_2013 study).
-*   *Re-download:* If you wish to re-download the data from scratch, you must run `Data/curated_data.ipynb` using an **R environment**.
+The required CSV files are already included under `Data/`.
+- Source: curatedMetagenomicData (LeChatelierE_2013 study).
+- To re-download from scratch, run `Data/curated_data.ipynb` in an R environment.
 
 ### 3. Running the Analysis
-Open **`research.ipynb`** in Jupyter Lab or VS Code. This single notebook executes the entire pipeline sequentially:
+Open `research.ipynb` and run top to bottom.
 
-#### **Part A: Preprocessing & EDA**
-*   **MIPMLP Pipeline:** Aggregates taxonomy to species level and filters rare bacteria (<1% prevalence).
-*   **Transformation:** Applies Log-transformation to handle skewness.
-*   **Goldilocks Test:** Verifies the hypothesis that "balance" (intermediate abundance) or high abundance of commensals is protective.
+#### Part A: Preprocessing & EDA
+- MIPMLP pipeline (species-level aggregation + rare taxa filtering)
+- Log transformation to handle skewness
+- Data sparsity and class imbalance diagnostics
 
-#### **Part B: Statistical Analysis**
-*   **Differential Abundance:** Runs Mann-Whitney U tests.
-*   **FDR Correction:** Applies Benjamini-Hochberg correction ($q < 0.1$) to identify 5 significant biomarkers.
-*   **Visualization:** Generates the **Volcano Plot** showing enrichment in Lean vs. Obese groups.
+#### Part B: Statistical Analysis
+- Mann-Whitney U tests + FDR correction (q < 0.1)
+- Volcano plot for differential abundance
+- Goldilocks test for protective taxa
 
-#### **Part C: Predictive Modeling**
-1.  **Baselines:** Trains Logistic Regression (L1-regularized) and Random Forest (with SMOTE and GridSearch).
-2.  **iMic Deep Learning:**
-    *   **Image Generation:** Converts tabular abundance data into 2D phylogenetic images (stored in `research_images/`).
-    *   **Optimization:** Uses **Optuna** to find the best learning rate, dropout, and batch size for the CNN.
-    *   **Training:** Trains the final CNN model using PyTorch Lightning.
+#### Part C: Predictive Modeling
+- Logistic Regression (L1) and Random Forest (SMOTE + GridSearch)
+- Random Forest feature-importance analysis
+- iMic CNN with Optuna tuning
 
-#### **Part D: Evaluation & Calibration**
-*   **Metrics:** Calculates AUC, Precision, Recall, and F1-Score.
-*   **Threshold Tuning:** Demonstrates the fix for low recall by shifting the decision boundary to 0.3.
-*   **Output:** Generates Confusion Matrices and ROC Curves.
+#### Part D: Evaluation & Calibration
+- AUC, Precision, Recall, F1
+- ROC curves and confusion matrix
+- Threshold calibration (0.3 vs 0.5)
 
----
-
-## 📊 Summary of Results
-
-| Model | AUC | Precision | Recall | F1-Score |
-| :--- | :--- | :--- | :--- | :--- |
-| **Logistic Regression (Baseline)** | 0.70 | 0.75 | 0.73 | 0.74 |
-| **Random Forest (Optimized)** | 0.62 | 0.67 | 0.55 | 0.60 |
-| **iMic CNN (Threshold 0.5)** | 0.80 | 1.00 | 0.30 | 0.47 |
-| **iMic CNN (Threshold 0.3)** | **0.80** | **0.94** | **0.52** | **0.67** |
-
-*The iMic model with threshold calibration provides the best balance for clinical screening.*
-
-*Notes: Tabular baseline metrics are computed on the same held-out test split used for iMic (stratified 80/20 split, `random_state=43`, threshold=0.5). The notebook also reports PR-AUC and plots ROC/PR curves for all models.*
+### 4. Reproducibility
+Random seeds are set in `research.ipynb` (NumPy, Python, PyTorch), and splits use fixed `random_state` values.
 
 ---
 
-## 👥 Authors
-*   **[Lior Ben Jashar]**
-*   **[Yarin Ifrah]**
+## Summary of Results (current notebook outputs)
+
+**Tabular baselines (5-fold CV):**
+
+| Model | AUC (mean) | Notes |
+| :--- | :---: | :--- |
+| Logistic Regression (L1) | ~0.70 | CV mean AUC from `research.ipynb` |
+| Random Forest (SMOTE + GridSearch) | ~0.74 | CV mean AUC from `research.ipynb` |
+
+**Hold-out test split (same split used for iMic):**
+
+| Model | AUC | Precision | Recall | F1 | Threshold |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| Logistic Regression | 0.70 | 0.75 | 0.73 | 0.74 | 0.5 |
+| Random Forest | 0.70 | 0.76 | 0.58 | 0.66 | 0.5 |
+
+**iMic CNN (hold-out test split):**
+
+| Model | AUC | Precision | Recall | F1 | Threshold |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| iMic CNN | 0.80 | 0.94 | 0.52 | 0.67 | 0.3 |
+
+Note: `research.ipynb` includes a consolidated hold-out results table for LR, RF, and iMic.
+
+---
+
+## Authors
+- **Lior Ben Jashar**
+- **Yarin Ifrah**
