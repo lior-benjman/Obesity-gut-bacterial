@@ -1,36 +1,103 @@
-# Obesity-gut-bacterial
-Data science project in ML and medical applications
+# Gut Microbiome and Obesity: Deep Learning & Statistical Analysis
 
-First step - Research question branstorming.
-we wanted to explore gut bacteria and it's connection to the obesity / type 2 diabetes..
+**Course:** Machine Learning and Statistics in Medical Applications  
+**Final Project: Phase 2**
 
-Our Final Research Question: Which gut bacterial taxa are associated with obesity (BMI ≥ 30 vs BMI ≤ 25), and how well can gut microbiome composition predict obesity status?
+This repository contains the complete research pipeline for analyzing the relationship between gut bacterial taxa and obesity. It employs advanced statistical methods, tabular machine learning, and a novel deep learning approach (**iMic**) that converts microbiome data into phylogenetic images.
 
-Data source - https://waldronlab.io/curatedMetagenomicData/
-In order to download the dataset, we will use R notebook since it's the most recommended clean way to download this dataset with no caveats.
-![alt text](image.png)
+---
 
-In R:
-> bmi_col <- grep("bmi", colnames(meta), ignore.case = TRUE, value = TRUE)[1]
-> meta$BMI_num <- as.numeric(meta[[bmi_col]])
-> 
-> meta$group <- NA
-> meta$group[meta$BMI_num <= 25] <- "Lean"
-> meta$group[meta$BMI_num >= 30] <- "Obese"
-> 
-> summary(meta2$BMI_num)
-   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-  18.10   23.50   31.20   29.79   34.00   46.60 
-> table(meta2$group)
+## 📌 Project Overview
 
- Lean Obese 
-   96   169 
+**Research Question:** Which gut bacterial taxa are associated with obesity (BMI ≥ 30) vs. Lean status (BMI ≤ 25), and can deep learning on phylogenetic images outperform traditional tabular models in predicting obesity?
 
-   We filtered the original dataset to include only lean and obese individuals, removed rare taxa, and applied a log transformation.
-   The final analysis was conducted on the processed feature matrix and corresponding metadata.
-   
-   Explanation:
-   We applied a log transformation early because microbiome relative abundance data is highly skewed, sparse, and spans several orders of magnitude, and many of the statistical tests and machine learning models we use later assume more stable variance and benefit from reduced skewness. 
-   
+**Key Findings:**
+1.  **Protective Signatures:** High abundance of specific commensal bacteria (e.g., *Fretibacterium fastidiosum*) is strongly associated with the Lean phenotype.
+2.  **Model Performance:** The **iMic CNN model** achieved a **ROC-AUC of ~0.80** on the held-out test set, outperforming the tabular baselines (Logistic Regression / Random Forest). See `research.ipynb` for full ROC/PR curves and confusion-matrix metrics.
+3.  **Clinical Optimization:** By calibrating the decision threshold from 0.5 to 0.3, we increased **Sensitivity (Recall) by 73%** (from 0.30 to 0.52) while maintaining high **Precision (0.94)**, making the model a viable screening tool.
 
-   Successfully downloaded the datasets ("LeChatelier_obesity_meta" and "LeChatelier_obesity_X_log").
+---
+
+## 📂 Repository Structure
+
+```
+├── Data/
+│   ├── curated_data.ipynb            # R script for downloading raw data (curatedMetagenomicData)
+│   ├── Raw_LeChatelier_metadata.csv  # Processed Metadata
+│   └── Raw_LeChatelier_relative_abundance.csv # Processed Taxa Abundance
+├── research_images/                  # Generated Phylogenetic Images (for iMic model)
+├── logs/                             # TensorBoard training logs
+├── checkpoints/                      # PyTorch Lightning model checkpoints
+├── research.ipynb                    # MAIN ANALYSIS NOTEBOOK (Run this)
+└── README.md                         # Project Documentation
+```
+
+---
+
+## 🛠️ Reproduction Instructions
+
+To fully reproduce the analysis presented in the final report, follow these steps.
+
+### 1. Prerequisites & Environment
+Ensure you have **Python 3.8+** installed. The project relies on the following key libraries:
+*   `torch`, `pytorch-lightning` (Deep Learning)
+*   `MIPMLP` (Microbiome Preprocessing & Image Generation)
+*   `optuna` (Hyperparameter Optimization)
+*   `scikit-learn`, `imbalanced-learn` (ML & Sampling)
+*   `pandas`, `seaborn`, `matplotlib` (Data Manipulation & Plotting)
+
+**Installation:**
+```bash
+pip install torch pytorch-lightning optuna scikit-learn pandas seaborn matplotlib imbalanced-learn mipmlp scipy xgboost
+```
+
+### 2. Data Acquisition (Optional)
+The necessary CSV files (`Raw_LeChatelier_*.csv`) are **already included** in the `Data/` folder.
+*   *Source:* [curatedMetagenomicData](https://waldronlab.io/curatedMetagenomicData/) (LeChatelierE_2013 study).
+*   *Re-download:* If you wish to re-download the data from scratch, you must run `Data/curated_data.ipynb` using an **R environment**.
+
+### 3. Running the Analysis
+Open **`research.ipynb`** in Jupyter Lab or VS Code. This single notebook executes the entire pipeline sequentially:
+
+#### **Part A: Preprocessing & EDA**
+*   **MIPMLP Pipeline:** Aggregates taxonomy to species level and filters rare bacteria (<1% prevalence).
+*   **Transformation:** Applies Log-transformation to handle skewness.
+*   **Goldilocks Test:** Verifies the hypothesis that "balance" (intermediate abundance) or high abundance of commensals is protective.
+
+#### **Part B: Statistical Analysis**
+*   **Differential Abundance:** Runs Mann-Whitney U tests.
+*   **FDR Correction:** Applies Benjamini-Hochberg correction ($q < 0.1$) to identify 5 significant biomarkers.
+*   **Visualization:** Generates the **Volcano Plot** showing enrichment in Lean vs. Obese groups.
+
+#### **Part C: Predictive Modeling**
+1.  **Baselines:** Trains Logistic Regression (L1-regularized) and Random Forest (with SMOTE and GridSearch).
+2.  **iMic Deep Learning:**
+    *   **Image Generation:** Converts tabular abundance data into 2D phylogenetic images (stored in `research_images/`).
+    *   **Optimization:** Uses **Optuna** to find the best learning rate, dropout, and batch size for the CNN.
+    *   **Training:** Trains the final CNN model using PyTorch Lightning.
+
+#### **Part D: Evaluation & Calibration**
+*   **Metrics:** Calculates AUC, Precision, Recall, and F1-Score.
+*   **Threshold Tuning:** Demonstrates the fix for low recall by shifting the decision boundary to 0.3.
+*   **Output:** Generates Confusion Matrices and ROC Curves.
+
+---
+
+## 📊 Summary of Results
+
+| Model | AUC | Precision | Recall | F1-Score |
+| :--- | :--- | :--- | :--- | :--- |
+| **Logistic Regression (Baseline)** | 0.70 | 0.75 | 0.73 | 0.74 |
+| **Random Forest (Optimized)** | 0.62 | 0.67 | 0.55 | 0.60 |
+| **iMic CNN (Threshold 0.5)** | 0.80 | 1.00 | 0.30 | 0.47 |
+| **iMic CNN (Threshold 0.3)** | **0.80** | **0.94** | **0.52** | **0.67** |
+
+*The iMic model with threshold calibration provides the best balance for clinical screening.*
+
+*Notes: Tabular baseline metrics are computed on the same held-out test split used for iMic (stratified 80/20 split, `random_state=43`, threshold=0.5). The notebook also reports PR-AUC and plots ROC/PR curves for all models.*
+
+---
+
+## 👥 Authors
+*   **[Lior Ben Jashar]**
+*   **[Yarin Ifrah]**
