@@ -1,3 +1,8 @@
+.venv/
+venv/
+.idea/
+.vscode/
+.cache/
 *.pptx
 __pycache__/
 *.pyc

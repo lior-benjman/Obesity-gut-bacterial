@@ -16,7 +16,6 @@ METRICS_DF = pd.DataFrame(
         ["Random Forest (hold-out, thr=0.5)", 0.628788, 0.566038, 0.678571, 0.575758, 0.622951],
         ["iMic CNN (hold-out, thr=0.5)", 0.783333, 0.679245, 0.666667, 0.969697, 0.790123],
         ["iMic CNN (hold-out, thr=0.3)", 0.783333, 0.698113, 0.673469, 1.000000, 0.804878],
-        ["iMic Top-5 RF (train-only, leakage-safe)", 0.860000, np.nan, np.nan, np.nan, np.nan],
     ],
     columns=["Model", "AUC", "Accuracy", "Precision", "Recall", "F1"],
 )
@@ -27,8 +26,7 @@ TOP_TAXA_TEXT = [
     "Most significant taxon: Fretibacterium_fastidiosum (p = 1.20e-05)",
     "Second most significant taxon: Clostridium_sp_CAG_58 (p = 6.12e-05)",
     "Total significant taxa after FDR correction (q < 0.1): 5",
-    "Top-5 train-derived RF taxa for leakage-safe iMic: Fretibacterium_fastidiosum, "
-    "Clostridium_sp_CAG_58, Roseburia_sp_CAG_309, Roseburia_sp_CAG_303, Clostridium_sp_CAG_964",
+    "These statistical signals motivate the predictive stage by showing that the phenotype-linked microbiome structure is not random.",
 ]
 
 CM = np.array([[4, 16], [0, 33]])
@@ -72,11 +70,11 @@ def page_1(pdf):
         "and predictive modeling with Logistic Regression, Random Forest, and iMic-based CNN models. In this run, five taxa "
         "passed FDR < 0.1; the strongest signal was Fretibacterium_fastidiosum (p = 1.20e-05), followed by "
         "Clostridium_sp_CAG_58 (p = 6.12e-05). On hold-out evaluation, Logistic Regression achieved AUC 0.700 (F1 0.738), "
-        "Random Forest achieved AUC 0.629 (F1 0.623), and iMic achieved AUC 0.783 with recall-oriented thresholding."
-        "A leakage-safe iMic variant using train-derived top-5 RF taxa reached AUC 0.86.\n\n"
+        "Random Forest achieved AUC 0.629 (F1 0.623), and iMic achieved AUC 0.783 with recall-oriented thresholding.\n\n"
         "Overall, the results support a reproducible end-to-end workflow and show that phylogenetic image representations "
         "can improve discrimination beyond tabular baselines in this dataset. We also highlight the operating-point "
-        "trade-off between sensitivity and specificity for screening-oriented deployment."
+        "trade-off between sensitivity and specificity for screening-oriented deployment. Model differences are reported "
+        "descriptively because no formal significance test between models was completed in this submission."
     )
     # Abstract layout tightened to prevent right-edge clipping.
     add_wrapped(ax, 0.05, y, abstract, width=100, size=10.0, lh=0.0255)
@@ -111,8 +109,8 @@ def page_2(pdf):
         "(log10(X+1e-6)).\n\n"
         "Statistical analysis: per-taxon Mann-Whitney U tests with Benjamini-Hochberg FDR correction (q < 0.1).\n\n"
         "Models: L1-regularized Logistic Regression, Random Forest with scaler+SMOTE+grid-search, and iMic CNN optimized with Optuna.\n\n"
-        "Evaluation: fixed shared hold-out split (80/20), fixed seeds, and additional leakage-safe variant where feature selection and top-5 "
-        "taxa extraction are performed on training data only before iMic image generation."
+        "Evaluation: fixed shared hold-out split (80/20), fixed seeds, training-only tuning for the iMic validation step, "
+        "and hold-out reporting shared across all primary models."
     )
     add_wrapped(ax, 0.05, y, methods)
     pdf.savefig(fig)
@@ -175,7 +173,7 @@ def page_4(pdf):
     tbl.auto_set_font_size(False)
     tbl.set_fontsize(8.3)
     tbl.scale(1, 1.38)
-    axt.set_title("Table 1. Hold-out and iMic Variant Performance (Latest Run)", fontsize=11)
+    axt.set_title("Table 1. Hold-out Performance Summary (Latest Run)", fontsize=11)
 
     axb = fig.add_subplot(gs[2, 0])
     auc_df = METRICS_DF[["Model", "AUC"]].dropna().copy()
@@ -184,7 +182,7 @@ def page_4(pdf):
         for lbl in auc_df["Model"]
     ]
     y_pos = np.arange(len(auc_df))
-    axb.barh(y_pos, auc_df["AUC"], color=["#4C78A8", "#F58518", "#54A24B", "#B279A2", "#72B7B2"], height=0.55)
+    axb.barh(y_pos, auc_df["AUC"], color=["#4C78A8", "#F58518", "#54A24B", "#B279A2"], height=0.55)
     axb.set_yticks(y_pos)
     axb.set_yticklabels(wrapped_labels, fontsize=7.5)
     axb.invert_yaxis()
@@ -246,8 +244,8 @@ def page_6(pdf):
         "showed significant group differences after FDR control. Predictively, tabular models established a baseline (LR outperforming RF "
         "in this run), while iMic improved discrimination and demonstrated stronger sensitivity at tuned thresholds.\n\n"
         "The strongest practical signal is not a single metric but the shape of trade-offs: iMic can be operated as a high-sensitivity "
-        "screening model when missing Obese cases is costly. The leakage-safe top-5 iMic variant (AUC 0.86) indicates that biologically "
-        "focused feature spaces can preserve and potentially improve predictive value."
+        "screening model when missing Obese cases is costly. The main methodological limitation is that no formal significance test was "
+        "completed between model performances, so observed score differences should be interpreted descriptively."
     )
     y = add_wrapped(ax, 0.05, y, discussion, width=106)
     y -= 0.012
