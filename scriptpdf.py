@@ -22,11 +22,20 @@ METRICS_DF = pd.DataFrame(
 
 SAMPLE_COUNTS = {"Lean": 98, "Obese": 167}
 
+MIMIC_RESULTS = {
+    "nested_p": 5.79996331930779e-59,
+    "start_level": 1,
+    "significant_hits": 47,
+    "overlap_taxa": ["Fretibacterium_fastidiosum", "Clostridium_sp_CAG_58"],
+}
+
 TOP_TAXA_TEXT = [
     "Most significant taxon: Fretibacterium_fastidiosum (p = 1.20e-05)",
     "Second most significant taxon: Clostridium_sp_CAG_58 (p = 6.12e-05)",
     "Total significant taxa after FDR correction (q < 0.1): 5",
-    "These statistical signals motivate the predictive stage by showing that the phenotype-linked microbiome structure is not random.",
+    f"mi-Mic nested a priori test: p = {MIMIC_RESULTS['nested_p']:.2e} (strong taxonomic structure).",
+    f"mi-Mic significant path/leaf detections: {MIMIC_RESULTS['significant_hits']}.",
+    "mi-Mic overlap with the leaf-level screen: Fretibacterium_fastidiosum and Clostridium_sp_CAG_58.",
 ]
 
 CM = np.array([[4, 16], [0, 33]])
@@ -69,8 +78,10 @@ def page_1(pdf):
         "Our pipeline combines preprocessing with MIPMLP, non-parametric statistical testing with false-discovery-rate correction, "
         "and predictive modeling with Logistic Regression, Random Forest, and iMic-based CNN models. In this run, five taxa "
         "passed FDR < 0.1; the strongest signal was Fretibacterium_fastidiosum (p = 1.20e-05), followed by "
-        "Clostridium_sp_CAG_58 (p = 6.12e-05). On hold-out evaluation, Logistic Regression achieved AUC 0.700 (F1 0.738), "
-        "Random Forest achieved AUC 0.629 (F1 0.623), and iMic achieved AUC 0.783 with recall-oriented thresholding.\n\n"
+        "Clostridium_sp_CAG_58 (p = 6.12e-05). A complementary taxonomy-aware mi-Mic test was also strongly significant "
+        f"(nested p = {MIMIC_RESULTS['nested_p']:.2e}), reported {MIMIC_RESULTS['significant_hits']} path/leaf detections, and recovered the same two leading taxa at the leaf level. "
+        "On hold-out evaluation, Logistic Regression achieved AUC 0.700 (F1 0.738), Random Forest achieved AUC 0.629 (F1 0.623), "
+        "and iMic achieved AUC 0.783 with recall-oriented thresholding.\n\n"
         "Overall, the results support a reproducible end-to-end workflow and show that phylogenetic image representations "
         "can improve discrimination beyond tabular baselines in this dataset. We also highlight the operating-point "
         "trade-off between sensitivity and specificity for screening-oriented deployment. Model differences are reported "
@@ -107,7 +118,9 @@ def page_2(pdf):
         f"(Lean={SAMPLE_COUNTS['Lean']}, Obese={SAMPLE_COUNTS['Obese']}).\n\n"
         "Preprocessing: MIPMLP taxonomy aggregation (species-level), relative normalization, rare taxa filtering, then global log transform "
         "(log10(X+1e-6)).\n\n"
-        "Statistical analysis: per-taxon Mann-Whitney U tests with Benjamini-Hochberg FDR correction (q < 0.1).\n\n"
+        "Statistical analysis: per-taxon Mann-Whitney U tests with Benjamini-Hochberg FDR correction (q < 0.1), plus a "
+        "taxonomy-aware mi-Mic test on the same post-MIPMLP species table. In this cohort, the paper-style sub-PCA merge "
+        "collapsed the data to one synthetic feature, so mi-Mic was run on the preserved species table X instead.\n\n"
         "Models: L1-regularized Logistic Regression, Random Forest with scaler+SMOTE+grid-search, and iMic CNN optimized with Optuna.\n\n"
         "Evaluation: fixed shared hold-out split (80/20), fixed seeds, training-only tuning for the iMic validation step, "
         "and hold-out reporting shared across all primary models."
@@ -123,7 +136,7 @@ def page_3(pdf):
     ax0 = fig.add_subplot(gs[0, 0])
     ax0.axis("off")
     y = 0.98
-    ax0.text(-0.05, y, "3. Results: Data Profile and Statistical Signals", fontsize=14, fontweight="bold", va="top")
+    ax0.text(-0.05, y, "3. Results: Data Profile, Statistical Signals, and mi-Mic", fontsize=14, fontweight="bold", va="top")
     y -= 0.13
     for line in TOP_TAXA_TEXT:
         y = add_wrapped(ax0, -0.05, y, f"- {line}", width=95, size=10.5, lh=0.10)
@@ -243,6 +256,10 @@ def page_6(pdf):
         "This analysis follows a coherent path from biological question to deployable model behavior. Statistically, five taxa "
         "showed significant group differences after FDR control. Predictively, tabular models established a baseline (LR outperforming RF "
         "in this run), while iMic improved discrimination and demonstrated stronger sensitivity at tuned thresholds.\n\n"
+        f"The mi-Mic analysis strengthens the missing bridge between statistics and modeling: its nested a priori test was highly significant "
+        f"(p = {MIMIC_RESULTS['nested_p']:.2e}), it reported {MIMIC_RESULTS['significant_hits']} taxonomically structured detections, and its "
+        "leaf-level overlap with the flat Mann-Whitney screen consisted of the same two headline taxa, "
+        "Fretibacterium_fastidiosum and Clostridium_sp_CAG_58.\n\n"
         "The strongest practical signal is not a single metric but the shape of trade-offs: iMic can be operated as a high-sensitivity "
         "screening model when missing Obese cases is costly. The main methodological limitation is that no formal significance test was "
         "completed between model performances, so observed score differences should be interpreted descriptively."
@@ -250,12 +267,34 @@ def page_6(pdf):
     y = add_wrapped(ax, 0.05, y, discussion, width=106)
     y -= 0.012
 
+    ax.text(0.05, y, "4.1 Biological Interpretation of the Two Leading Taxa", fontsize=14, fontweight="bold", va="top")
+    y -= 0.03
+    biology = (
+        "Fretibacterium_fastidiosum was higher in Lean participants. A cautious mechanistic reading is possible here: the species was "
+        "described as asaccharolytic, with acetate and propionate among its metabolic end products, and members of the broader "
+        "Synergistota/Synergistetes lineage are known amino-acid fermenters. Therefore, in our dataset, this taxon can be discussed as a "
+        "marker of a peptide- and amino-acid-fermenting ecological niche rather than a sugar-driven one. This interpretation is indirect, "
+        "but it is biologically compatible with nutrition literature showing that higher-protein diets can enhance fullness or satiety. "
+        "Importantly, our data contain no dietary intake measurements, so we cannot claim that higher protein intake caused either the "
+        "increase in Fretibacterium_fastidiosum or the lean phenotype (Vartoukian et al., 2013; Geng et al., 2022; de Carvalho et al., 2020).\n\n"
+        "Clostridium_sp_CAG_58 was enriched in Obese participants. Here the scientifically safest wording is more conservative: "
+        "Clostridium sp. CAG:58 is currently an unclassified placeholder taxon in NCBI, with limited species-level functional "
+        "characterization. We therefore interpret it as an obesity-associated clostridial signal in this cohort, not as proof that this "
+        "organism specifically prefers simple carbohydrates or directly drives carbohydrate craving. More generally, gut microbial products "
+        "can modulate appetite-regulatory and gut-brain signaling pathways, but attributing such a mechanism specifically to CAG:58 would "
+        "go beyond the available evidence (NCBI Taxonomy Browser, taxid 1262824; Fetissov, 2017)."
+    )
+    y = add_wrapped(ax, 0.05, y, biology, width=106, size=9.6, lh=0.0235)
+    y -= 0.012
+
     ax.text(0.05, y, "5. Limitations", fontsize=14, fontweight="bold", va="top")
     y -= 0.03
     limits = (
         "- Single cohort; no external validation cohort in this submission.\n"
         "- Cross-sectional design supports association, not causality.\n"
-        "- Performance may vary under distribution shift and prevalence changes."
+        "- Performance may vary under distribution shift and prevalence changes.\n"
+        "- In this cohort, mi-Mic had to run on the preserved species table because sub-PCA collapsed the dataset to one synthetic feature.\n"
+        "- Species-level biological mechanisms are much better supported for Fretibacterium_fastidiosum than for the poorly characterized taxon Clostridium sp. CAG:58."
     )
     y = add_wrapped(ax, 0.05, y, limits, width=106)
     y -= 0.012
@@ -275,7 +314,13 @@ def page_6(pdf):
     refs = (
         "1. Le Chatelier E, et al. Richness of human gut microbiome correlates with metabolic markers. Nature. 2013.\n"
         "2. Course lecture materials: MIPMLP and iMic methodology.\n"
-        "3. Reproducible implementation and outputs: research.ipynb."
+        "3. Reproducible implementation and outputs: research.ipynb.\n"
+        "4. Shtossel O, Finkelstein S, Louzoun Y. mi-Mic: a novel multi-layer statistical test for microbiota-disease associations. Genome Biol. 2024.\n"
+        "5. Vartoukian SR, et al. Fretibacterium fastidiosum gen. nov., sp. nov. Int J Syst Evol Microbiol. 2013.\n"
+        "6. Geng J, et al. Identification of a Putative CodY Regulon in the Gram-Negative Phylum Synergistetes. Int J Mol Sci. 2022.\n"
+        "7. de Carvalho KMB, et al. Dietary protein and appetite sensations in individuals with overweight and obesity: a systematic review. Eur J Nutr. 2020.\n"
+        "8. Fetissov SO. Role of the gut microbiota in host appetite control: bacterial growth to animal feeding behaviour. Nat Rev Endocrinol. 2017.\n"
+        "9. NCBI Taxonomy Browser: Clostridium sp. CAG:58 (taxid 1262824), accessed for taxonomic classification."
     )
     add_wrapped(ax, 0.05, y, refs, width=106)
 

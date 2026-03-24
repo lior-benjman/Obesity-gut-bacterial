@@ -57,7 +57,7 @@ So the statistics justify why classification is meaningful, and the classifier t
 
 ### Stage D: Statistical Testing
 **Input:**
-- `X_log` or the processed abundance table
+- the post-MIPMLP relative-abundance table `X`
 - Lean / Obese labels
 
 **Process:**
@@ -67,6 +67,10 @@ So the statistics justify why classification is meaningful, and the classifier t
 **Output:**
 - p-value and q-value per taxon
 - ranked list of taxa associated with the phenotype
+
+Important distinction:
+- the primary reported biological associations come from this cohort-level statistical table
+- a separate train-only statistical pass is used later only for leakage-safe feature filtering inside the Random Forest workflow
 
 ### Stage E: Tabular Models
 **Input:**
@@ -144,7 +148,8 @@ Good sentence for defense:
 ## 8. What Was Found Where
 This is also a question we need to answer without confusion.
 
-- The **differential-abundance findings** are statistical associations on the cohort table.
+- The **differential-abundance findings** reported in the paper are statistical associations on the full processed cohort table.
+- The **train-only significant taxa list** is a modeling utility used inside the Random Forest pipeline so the test split is not used for feature selection.
 - The **model metrics** come from the shared hold-out test split.
 - The **threshold analysis** is also on the hold-out test split.
 
@@ -184,6 +189,11 @@ The safe answer is:
 
 If the lecturer presses for package internals, the correct response is:
 - “that is part of the implementation details of the course method; the project-level point is how the transformed representation is used and evaluated”
+
+### Sub-PCA Short Version for Defense
+- `sub-PCA` is not a method we invented
+- it is not one of the paper's core reported results
+- if it appears in the course package, treat it as an internal iMic pipeline transformation and bring the answer back to inputs, outputs, and hold-out evaluation
 
 ## 12. How to Talk About the Two Main Taxa
 ### Fretibacterium_fastidiosum

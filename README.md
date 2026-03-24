@@ -19,10 +19,11 @@ This is the intended connection between the statistical and predictive parts of 
 - Five taxa passed `FDR < 0.1` after Mann-Whitney U testing with Benjamini-Hochberg correction.
 - `Fretibacterium_fastidiosum` was the strongest Lean-associated signal.
 - `Clostridium_sp_CAG_58` was enriched in Obese samples.
+- In the Random Forest interpretation output, those same two taxa ranked `#2` and `#1` in feature importance, respectively, which is the main bridge between the statistical and predictive sections.
 - On the shared hold-out split, Logistic Regression reached AUC `0.700`, Random Forest reached AUC `0.629`, and iMic reached AUC `0.783`.
 - At iMic threshold `0.3`, recall for Obese cases reached `1.00`, with more false positives among Lean samples.
 
-Important limitation: model comparisons are descriptive in the current repo. A formal significance test between model performances was not completed.
+Important limitation: the hold-out score table is not enough by itself to claim superiority. The notebook now includes a dedicated significance-testing step for shared-split model comparisons, and final superiority claims should only be made after that cell is rerun in the full project environment.
 
 ## Repository Structure
 ```text
@@ -67,7 +68,7 @@ The notebook currently follows this structure:
 - **Part C:** Mann-Whitney + FDR statistical screening
 - **Part D:** Logistic Regression and Random Forest baselines
 - **Part E:** iMic image conversion, CNN tuning, and threshold analysis
-- **Part F:** exploratory extensions from the lectures
+- **Part F:** formal shared-split comparison support and then exploratory lecture-inspired variants
 
 ### 4. Split Logic
 This is the most important methodological point to understand before running or defending the project.
@@ -114,6 +115,9 @@ That file explains:
 - what belongs to train, validation, and test
 - how the statistics connect to the models
 - how to talk about MIPMLP and iMic without hand-waving
+
+For final cleanup before submission, also see:
+- `SUBMISSION_CHECKLIST.md`
 
 ## Authors
 - **Lior Ben Jashar**

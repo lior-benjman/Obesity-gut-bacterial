@@ -42,7 +42,7 @@ These properties are the reason we did not move directly to modeling. We first a
 ### 2.3 Preprocessing
 We used the course MIPMLP pipeline with `taxonomy_level = 7`, relative normalization, and rare-taxa filtering (`rare_bacteria_threshold = 0.01`). After preprocessing, the feature table contained 373 taxa.
 
-We then applied a global transform:
+We then applied a global transform for modeling and scale-stabilized visualization:
 `X_log = log10(X + 1e-6)`
 
 This step serves three purposes:
@@ -51,7 +51,7 @@ This step serves three purposes:
 3. it keeps zeros numerically valid by adding a small constant before the logarithm
 
 ### 2.4 Statistical Analysis
-We performed per-taxon Mann-Whitney U tests comparing Lean versus Obese samples. This test was chosen because the abundance distributions are sparse and non-Gaussian. To control for multiple testing across hundreds of taxa, we applied Benjamini-Hochberg false-discovery-rate correction and used `q < 0.1` as the significance threshold.
+The primary differential-abundance table reported in this paper was computed on the post-MIPMLP relative-abundance table `X` rather than on `X_log`. We performed per-taxon Mann-Whitney U tests comparing Lean versus Obese samples. This test was chosen because the abundance distributions are sparse and non-Gaussian. To control for multiple testing across hundreds of taxa, we applied Benjamini-Hochberg false-discovery-rate correction and used `q < 0.1` as the significance threshold.
 
 The purpose of this section was not only to list significant taxa. It was also to answer a gating question for the modeling section: does the microbiome contain detectable phenotype-linked signal at the individual taxon level?
 
@@ -79,7 +79,7 @@ This point is critical: any effect reported on the test set must be described as
 ### 2.7 Metrics and Comparison Limits
 We report AUC, accuracy, precision, recall, F1, ROC curves, and confusion matrices. These metrics are useful because obesity screening has asymmetric costs: missing Obese cases is different from producing additional false positives.
 
-However, in the current submission we did **not** complete a formal statistical significance test between models on the shared test set. Therefore, model differences should be interpreted as descriptive performance differences rather than definitive proof that one model is statistically superior.
+However, a model-comparison table is not sufficient by itself. Any superiority claim on the shared test set should be supported by a paired significance test on the same hold-out predictions. Until that significance step is rerun and reported alongside the final exported results, model differences should be interpreted as descriptive performance differences rather than definitive proof that one model is statistically superior.
 
 ## 3. Results
 ### 3.1 Cohort Profile and Distributional Motivation
@@ -98,10 +98,19 @@ This section is the biological anchor of the project. It shows that the Lean and
 The statistics and the models answer different questions, but they are connected.
 
 - The Mann-Whitney + FDR section establishes that there is real phenotype-linked microbial structure in the data.
-- The feature-importance and focused-taxon analyses show whether the same taxa that differ statistically are also informative predictively.
+- The feature-importance analysis checks whether taxa that differ statistically also appear among the strongest predictive features.
 - The iMic model then tests whether embedding the taxa in a phylogeny-aware spatial representation captures signal beyond standard tabular baselines.
 
 In other words, the statistical results motivate why classification is reasonable, and the predictive section tests whether that signal transfers to unseen data.
+
+That bridge is not only conceptual; it also appears in the model interpretation outputs. In the Random Forest importance ranking from the notebook, the two strongest taxa from the statistical section also appear as the two highest-importance predictive features:
+
+| Taxon | Statistical Role | Random Forest Importance Rank |
+| :--- | :--- | :---: |
+| `Clostridium_sp_CAG_58` | Obese-associated | `1` |
+| `Fretibacterium_fastidiosum` | Lean-associated | `2` |
+
+This does not prove causality, but it does show that the biological signal highlighted by the statistical section is not disconnected from the predictive section.
 
 ### 3.4 Hold-out Predictive Performance
 All primary models were evaluated on the same hold-out split.
@@ -118,7 +127,7 @@ Interpretation:
 - Random Forest under this feature-space and split did not outperform the linear baseline.
 - iMic produced the highest AUC in this run and, more importantly, was highly sensitive to Obese cases after threshold calibration.
 
-Because no paired significance test between models was completed, we report these as observed differences rather than statistically confirmed superiority claims.
+Because the shared-split significance step must accompany any final superiority claim, we report these here as observed differences rather than statistically confirmed superiority claims.
 
 ### 3.5 Operating-Point Interpretation
 At threshold `0.3`, the iMic confusion matrix on the hold-out set (`n = 53`) is:
@@ -138,9 +147,9 @@ The project supports three main conclusions.
 3. The value of the predictive model depends not only on AUC, but also on the operating point chosen for the clinical goal.
 
 ### 4.2 Interpreting the Two Strongest Taxa
-**Fretibacterium_fastidiosum** was more abundant in Lean participants. A cautious interpretation is that this taxon may be part of a microbial environment associated with a Lean phenotype in this cohort. One biologically plausible hypothesis is that taxa associated with protein-rich fermentation patterns may co-occur with dietary behaviors linked to satiety and lower adiposity. This interpretation should be treated as a hypothesis, not as causal proof from the present analysis.
+**Fretibacterium_fastidiosum** was more abundant in Lean participants. A more specific, but still cautious, interpretation is possible here. The species was originally described as **asaccharolytic**, with acetate and propionate among its metabolic end products, and the broader Synergistota/Synergistetes lineage is strongly associated with amino-acid transport and fermentation rather than sugar-centered metabolism. In that sense, the Lean association in our cohort is biologically compatible with a peptide- and amino-acid-fermenting ecological niche rather than a strongly saccharolytic one. That interpretation also aligns, at a high level, with nutrition literature showing that higher-protein diets can increase satiety in overweight/obese populations (Vartoukian et al., 2013; Geng et al., 2022; de Carvalho et al., 2020). However, our dataset contains no direct dietary intake measurements, so this remains a literature-supported mechanistic hypothesis rather than evidence that protein intake caused either the microbial shift or the Lean phenotype.
 
-**Clostridium_sp_CAG_58** was more abundant in Obese participants. A cautious interpretation is that this taxon may be part of a microbial profile associated with metabolic environments that differ from the Lean group. One plausible hypothesis is that carbohydrate-rich dietary patterns may support taxa enriched in the Obese cohort. Again, this is an interpretation layer added to the statistical result, not direct proof that the bacterium itself causes obesity, alters appetite, or drives host behavior.
+**Clostridium_sp_CAG_58** was more abundant in Obese participants. Here the scientifically safest interpretation is intentionally more conservative. NCBI currently lists *Clostridium* sp. CAG:58 as an unclassified placeholder taxon, which means its species-level metabolism is still poorly resolved. For that reason, we interpret it as an obesity-associated clostridial signal in this cohort, not as proof that the organism specifically prefers simple carbohydrates or directly induces carbohydrate craving. More broadly, gut microbial metabolites can interact with appetite-regulatory and gut-brain signaling pathways, but assigning such a mechanism specifically to CAG:58 would go beyond the available evidence (Fetissov, 2017; NCBI Taxonomy Browser).
 
 The key distinction is important for the oral defense: the dataset supports **association**, while the mechanistic narrative remains **biologically plausible speculation** unless supported by external literature and experimental validation.
 
@@ -156,9 +165,9 @@ This is the linking logic of the project. Without the statistical section, the c
 ### 4.4 Limitations
 - single cohort with no external validation set
 - cross-sectional data, so the analysis supports association rather than causation
-- no completed formal significance test between model performances
+- any final model-superiority claim requires a paired significance test reported next to the hold-out table
 - microbiome features are dependent and compositional, so standard ML baselines remain an approximation
-- some exploratory model variants should be treated cautiously unless rerun and fully documented under cleaned split logic
+- exploratory notebook variants such as PCA, XGBoost, and RFE should not be mixed into the core defense story
 
 ### 4.5 Practical Value
 Even with those limitations, the project demonstrates a defensible end-to-end workflow for microbiome data:
@@ -175,3 +184,8 @@ This project should be defended as a connected microbiome-analysis pipeline rath
 1. Le Chatelier E, et al. *Richness of human gut microbiome correlates with metabolic markers*. Nature. 2013.
 2. Course lecture materials on MIPMLP and iMic methodology.
 3. Notebook implementation and outputs: `research.ipynb`.
+4. Vartoukian SR, et al. *Fretibacterium fastidiosum gen. nov., sp. nov., isolated from the human oral cavity*. Int J Syst Evol Microbiol. 2013.
+5. Geng J, et al. *Identification of a Putative CodY Regulon in the Gram-Negative Phylum Synergistetes*. Int J Mol Sci. 2022.
+6. de Carvalho KMB, et al. *Dietary protein and appetite sensations in individuals with overweight and obesity: a systematic review*. Eur J Nutr. 2020.
+7. Fetissov SO. *Role of the gut microbiota in host appetite control: bacterial growth to animal feeding behaviour*. Nat Rev Endocrinol. 2017.
+8. NCBI Taxonomy Browser. *Clostridium sp. CAG:58* (taxid 1262824).

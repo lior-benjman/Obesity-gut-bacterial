@@ -1,6 +1,14 @@
 # Submission Checklist (Stage 2)
 
-Use this checklist before final submission.
+Use this checklist before final submission. The first section is the lecturer-focused pass and should be treated as mandatory.
+
+## Lecturer-Focused Must-Fix Items
+- [ ] The oral story is one pipeline: data challenges -> preprocessing -> statistics -> prediction -> interpretation.
+- [ ] The paper includes one explicit bridge from significant taxa to predictive interpretation.
+- [ ] The defense answer for each stage has exact inputs and outputs, not vague descriptions.
+- [ ] We can say exactly which findings come from the full cohort, which from train-only processing, and which from the hold-out test.
+- [ ] Exploratory PCA / XGBoost / RFE cells are clearly separated from the core report and are not used as primary evidence.
+- [ ] Any claim that one model is better than another is backed by the shared-split significance-testing step, or else described only as descriptive.
 
 ## Required Deliverables
 - [ ] Final paper submitted as an English PDF (`<= 8` pages).
