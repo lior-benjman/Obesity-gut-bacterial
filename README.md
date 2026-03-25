@@ -1,49 +1,50 @@
-# Gut Microbiome and Obesity: Deep Learning & Statistical Analysis
+# Gut Microbiome and Obesity: Deep Learning and Statistical Analysis
 
 **Course:** Machine Learning and Statistics in Medical Applications  
 **Final Project: Phase 2**
 
-This repository contains the complete research pipeline for analyzing the relationship between gut bacterial taxa and obesity. It combines statistical testing, tabular machine learning, and a deep learning approach (**iMic**) that converts microbiome data into phylogenetic images.
+This repository contains an end-to-end microbiome analysis workflow for studying obesity. The project combines statistical screening, tabular machine learning, and phylogeny-aware deep learning through iMic.
 
----
+## Project Story
+The project is built around one connected question, not two separate tasks:
+1. **Do Lean and Obese participants differ at the microbiome level?**
+2. **If they do, is that microbial signal strong enough to support prediction on unseen samples?**
 
-## Project Overview
+The workflow is therefore:
+`data challenges -> preprocessing -> statistical testing -> model design -> hold-out evaluation -> interpretation`
 
-**Research Question:** Which gut bacterial taxa are associated with obesity (BMI >= 30) vs. Lean status (BMI <= 25), and can deep learning on phylogenetic images outperform traditional tabular models in predicting obesity?
+This is the intended connection between the statistical and predictive parts of the work.
 
-**Key Findings (from current notebook outputs):**
-1. **Protective signatures:** High abundance of specific commensal bacteria (e.g., *Fretibacterium fastidiosum*) is associated with the Lean phenotype.
-2. **Model performance:** In 5-fold CV, Logistic Regression reaches AUC ~0.70 and Random Forest ~0.74. On the shared hold-out split, Logistic Regression and Random Forest reach AUC ~0.70, while iMic achieves AUC ~0.80.
-3. **Clinical calibration:** Shifting the decision threshold from 0.5 to 0.3 improves sensitivity for Obese cases while maintaining high precision (see `research.ipynb`).
+## Main Findings
+- Five taxa passed `FDR < 0.1` after Mann-Whitney U testing with Benjamini-Hochberg correction.
+- `Fretibacterium_fastidiosum` was the strongest Lean-associated signal.
+- `Clostridium_sp_CAG_58` was enriched in Obese samples.
+- In the Random Forest interpretation output, those same two taxa ranked `#2` and `#1` in feature importance, respectively, which is the main bridge between the statistical and predictive sections.
+- On the shared hold-out split, Logistic Regression reached AUC `0.700`, Random Forest reached AUC `0.629`, and iMic reached AUC `0.783`.
+- At iMic threshold `0.3`, recall for Obese cases reached `1.00`, with more false positives among Lean samples.
 
----
+Important limitation: the hold-out score table is not enough by itself to claim superiority. The notebook now includes a dedicated significance-testing step for shared-split model comparisons, and final superiority claims should only be made after that cell is rerun in the full project environment.
 
 ## Repository Structure
-
-```
+```text
 Data/
-  curated_data.ipynb                      # R notebook to re-download the raw data
-  Raw_LeChatelier_metadata.csv            # Processed metadata
-  Raw_LeChatelier_relative_abundance.csv  # Processed taxa abundance
-research_images/                          # Generated phylogenetic images (iMic)
-research_images_top5_rf_train/            # Leakage-safe top-5 RF image set for iMic
-logs/                                     # PyTorch Lightning logs
-checkpoints/                              # Model checkpoints
-research.ipynb                            # Main analysis notebook (run this)
-requirements.txt                          # Pinned Python dependencies
-SUBMISSION_CHECKLIST.md                   # Stage-2 submission checklist
-paper_template.md                         # English paper writing template
-README.md                                 # Project documentation
+  curated_data.ipynb                      # Runnable R notebook for refreshing the raw study tables
+  curated_data.R                          # Same refresh logic as a plain R script
+  Raw_LeChatelier_metadata.csv            # Metadata used in the project
+  Raw_LeChatelier_relative_abundance.csv  # Relative-abundance table used in the project
+research.ipynb                            # Main analysis notebook
+Final_Paper_Stage2.md                     # Main paper draft in markdown
+EXPLICIT_EXPLANATIONS.md                  # Direct explanations for defense questions and unclear steps
+scriptpdf.py                              # Script for regenerating the PDF summary artifact
+requirements.txt                          # Python dependencies
+README.md                                 # Repo overview and run instructions
+SUBMISSION_CHECKLIST.md                   # Final submission checklist
 ```
-
----
 
 ## Reproduction Instructions
+### 1. Python Environment
+Use **Python 3.12.x**.
 
-### 1. Prerequisites & Environment
-Use **Python 3.12.x** (tested with 3.12.5).
-
-Create a clean environment and install pinned dependencies:
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
@@ -51,75 +52,72 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 2. Data Acquisition (Optional)
-The required CSV files are already included under `Data/`.
-- Source: curatedMetagenomicData (LeChatelierE_2013 study).
-- To re-download from scratch, run `Data/curated_data.ipynb` in an R environment (`IRkernel`).
+### 2. Optional Data Refresh in R
+The CSV files already required for this project are committed to the repo.
 
-### 3. Running the Analysis
-Open `research.ipynb` and run cells top-to-bottom in order.
+If you want to refresh them from `curatedMetagenomicData`, use either:
+- `Data/curated_data.ipynb` in an R / IRkernel environment
+- `Data/curated_data.R` as a plain R script
 
-The notebook is configured for:
-- fixed random seeds,
-- fixed train/test split,
-- train-only feature selection for hold-out evaluation,
-- Optuna best-parameter reuse in final iMic training.
+### 3. Main Analysis Flow
+Run `research.ipynb` from top to bottom.
 
-#### Part A: Preprocessing & EDA
-- MIPMLP pipeline (species-level aggregation + rare taxa filtering)
-- Log transformation to handle skewness
-- Data sparsity and class imbalance diagnostics
+The notebook currently follows this structure:
+- **Part A:** cohort definition and MIPMLP preprocessing
+- **Part B:** exploratory analysis of sparsity, skewness, and class balance
+- **Part C:** Mann-Whitney + FDR statistical screening
+- **Part D:** Logistic Regression and Random Forest baselines
+- **Part E:** iMic image conversion, CNN tuning, and threshold analysis
+- **Part F:** formal shared-split comparison support and then exploratory lecture-inspired variants
 
-#### Part B: Statistical Analysis
-- Mann-Whitney U tests + FDR correction (q < 0.1)
-- Volcano plot for differential abundance
-- Goldilocks test for protective taxa
+### 4. Split Logic
+This is the most important methodological point to understand before running or defending the project.
 
-#### Part C: Predictive Modeling
-- Logistic Regression (L1) and Random Forest (SMOTE + GridSearch)
-- Random Forest feature-importance analysis
-- iMic CNN with Optuna tuning
+- **Training split:** model fitting and any training-only tuning steps
+- **Internal validation inside training:** iMic hyperparameter tuning
+- **Hold-out test split:** final reporting only
 
-#### Part D: Evaluation & Calibration
-- AUC, Precision, Recall, F1
-- ROC curves and confusion matrix
-- Threshold calibration (0.3 vs 0.5)
+All primary model comparisons in the report are based on the same shared hold-out split.
 
-### 4. Reproducibility
-Random seeds are set in `research.ipynb` (`NumPy`, `Python`, `PyTorch`, `PyTorch Lightning`) and splits use fixed `random_state` values.
+## Why the Statistical and Modeling Parts Belong Together
+The project should be read in this order:
+1. The microbiome data are sparse, skewed, and high-dimensional.
+2. That motivates non-parametric testing and careful preprocessing.
+3. Statistical testing identifies taxa that differ between Lean and Obese groups.
+4. Predictive models test whether the same microbiome signal generalizes to unseen individuals.
+5. Threshold calibration shows how the model behaves under a screening-oriented objective.
 
-For submission packaging:
-- use `SUBMISSION_CHECKLIST.md` before final export,
-- draft the Stage-2 paper with `paper_template.md`,
-- export the final paper as an English PDF (max 8 pages, as required by course instructions).
+The statistics answer: **is there a biological signal?**  
+The models answer: **is that signal predictive?**
 
----
-
-## Summary of Results (current notebook outputs)
-
-**Tabular baselines (5-fold CV):**
-
-| Model | AUC (mean) | Notes |
-| :--- | :---: | :--- |
-| Logistic Regression (L1) | ~0.70 | CV mean AUC from `research.ipynb` |
-| Random Forest (SMOTE + GridSearch) | ~0.74 | CV mean AUC from `research.ipynb` |
-
-**Hold-out test split (same split used for iMic):**
-
-| Model | AUC | Precision | Recall | F1 | Threshold |
+## Reported Hold-out Results
+| Model | AUC | Accuracy | Precision | Recall | F1 |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| Logistic Regression | 0.70 | 0.75 | 0.73 | 0.74 | 0.5 |
-| Random Forest | 0.70 | 0.76 | 0.58 | 0.66 | 0.5 |
+| Logistic Regression (`thr = 0.5`) | 0.700 | 0.679 | 0.750 | 0.727 | 0.738 |
+| Random Forest (`thr = 0.5`) | 0.629 | 0.566 | 0.679 | 0.576 | 0.623 |
+| iMic (`thr = 0.5`) | 0.783 | 0.679 | 0.667 | 0.970 | 0.790 |
+| iMic (`thr = 0.3`) | 0.783 | 0.698 | 0.673 | 1.000 | 0.805 |
 
-**iMic CNN (hold-out test split):**
+## Biological Interpretation Notes
+The paper discusses two leading taxa:
+- `Fretibacterium_fastidiosum` as a Lean-associated signal
+- `Clostridium_sp_CAG_58` as an Obese-associated signal
 
-| Model | AUC | Precision | Recall | F1 | Threshold |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| iMic CNN | 0.80 | 0.94 | 0.52 | 0.67 | 0.3 |
+These interpretations are framed as **plausible biological hypotheses**, not as proof of causation. The dataset is observational and cross-sectional.
 
-Note: `research.ipynb` includes a consolidated hold-out results table for LR, RF, and iMic.
+## Defense Preparation
+For the questions the lecturer emphasized, see:
+- `EXPLICIT_EXPLANATIONS.md`
 
----
+That file explains:
+- why the log transform was used
+- what each pipeline stage takes as input and produces as output
+- what belongs to train, validation, and test
+- how the statistics connect to the models
+- how to talk about MIPMLP and iMic without hand-waving
+
+For final cleanup before submission, also see:
+- `SUBMISSION_CHECKLIST.md`
 
 ## Authors
 - **Lior Ben Jashar**
